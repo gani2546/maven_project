@@ -1,0 +1,25 @@
+stages:
+  - build
+  - deploy
+
+build:
+  stage: build
+  image: maven:3.8.4-openjdk-17
+  script:
+    - mvn clean package
+  artifacts:
+    paths:
+      - webapp/target/webapp.war
+
+deploy:
+  stage: deploy
+  image: ubuntu:latest
+  before_script:
+    - apt-get update && apt-get install -y sshpass
+    - mkdir -p ~/.ssh
+    - echo "$nkey" > ~/.ssh/id_rsa
+    - chmod 400 ~/.ssh/id_rsa
+    - ssh-keyscan -H 34.227.163.204 >> ~/.ssh/known_hosts
+  script:
+    - scp webapp/target/*.war ec2-user@34.227.163.204:/opt/tomcat/webapps/
+    - ssh ec2-user@34.227.163.204 "sudo sh /opt/tomcat/bin/startup.sh"
